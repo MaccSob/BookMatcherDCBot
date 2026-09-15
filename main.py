@@ -1,20 +1,13 @@
-import os
-import discord
-from discord.ext import commands
-from dotenv import load_dotenv
+from books import search_books
+from llm import interpret_mood, rank_and_explain
 
+def get_recommendations(mood_text):
+    mood_result = interpret_mood(mood_text)
+    wyniki = search_books(mood_result.search_query, limit=20)
+    return wyniki
 
-load_dotenv()
-
-intents = discord.Intents.default()
-intents.message_content = True
-
-bot = commands.Bot(command_prefix="!", intents=intents)
-
-TOKEN = os.getenv("DISCORD_TOKEN")
-
-@bot.command()
-async def recommend(ctx, *, mood):
-    await ctx.send(f"pretending to recommend books for mood: {mood}")
-
-bot.run(TOKEN)
+if __name__ == "__main__":
+    rekomendacje = get_recommendations("coś lekkiego przed snem, max 30 min czytania")
+    rekomendacje = rank_and_explain(rekomendacje, "coś lekkiego przed snem, max 30 min czytania")
+    for r in rekomendacje:
+        print(r.title, "-", r.reasoning)
