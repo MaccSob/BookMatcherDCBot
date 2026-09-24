@@ -12,6 +12,19 @@ Instead of asking an LLM to invent book titles, this bot retrieves real candidat
 4. The bot posts each recommendation back into the channel as a Discord embed — title, author, and reasoning.
 5. Every recommendation is logged to a local SQLite database, tied to the Discord user who requested it.
 
+## Architecture
+
+```mermaid
+flowchart LR
+    A[Discord User] -->|!recommend mood| B[bot.py]
+    B -->|HTTP via aiohttp| C[BookMatcher FastAPI]
+    C --> D[Open Library API]
+    C --> E[Gemini API]
+    C -->|recommendations| B
+    B -->|Discord embed| A
+    B -->|log request| F[(SQLite)]
+```
+
 ## Status
 
 **Complete (v1).**
@@ -23,6 +36,7 @@ Instead of asking an LLM to invent book titles, this bot retrieves real candidat
 - [x] Per-user recommendation history, stored in SQLite
 
 **Possible future extensions:**
+
 - Use stored history to avoid repeat recommendations
 - 👍/👎 feedback on recommendations, stored for future ranking
 - Scheduled "Book of the Day" post
@@ -54,7 +68,7 @@ book-mood-bot/
 
 ## Setup
 
-```bash
+```
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
@@ -74,11 +88,11 @@ USE_MOCK_DATA=false
 
 Two processes need to run at once, in separate terminals:
 
-```bash
+```
 uvicorn api:app --reload
 ```
 
-```bash
+```
 python bot.py
 ```
 
@@ -91,6 +105,7 @@ Set `USE_MOCK_DATA=true` in `.env` to skip real Open Library calls and use fixed
 ## Lessons learned
 
 Getting from "imports the pipeline" to "actually works" surfaced a few real bugs worth noting:
+
 - A module-level test script in `main.py` was re-running (and hitting the network) on every import, not just direct execution — fixed with an `if __name__ == "__main__":` guard.
 - Open Library requests had no `User-Agent` header, which likely contributed to intermittent connection resets under a burst of ~20 requests — fixed by adding a descriptive header and a small delay between requests.
 - Added a `USE_MOCK_DATA` toggle so bot development isn't blocked by external API flakiness going forward.
